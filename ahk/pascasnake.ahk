@@ -1,127 +1,100 @@
+#Requires AutoHotkey v2.0
 #SingleInstance Force
-#Persistent
-#NoEnv
+Persistent
 
-; Define input modes
-global caseModes := ["sentence", "lower", "upper", "caps", "alt", "title", "invert"]
 global currentInputMode := ""
 
-; Set tray icon and tooltip
-Menu, Tray, Icon, Shell32.dll, 44 ; Change icon as desired
-Menu, Tray, Tip, Case Mode: None
-Menu, Tray, NoStandard
-Menu, Tray, Add, Exit Script, ExitApp
+; Tray setup
+A_IconTip := "Case Mode: None"
+TraySetIcon("Shell32.dll", 44)
+TraySetToolTip("Case Mode: None")
+MenuExit := Menu()
+MenuExit.Add("Exit Script", (*) => ExitApp())
+A_TrayMenu := MenuExit
 
-; ==============================
-; Input Mode Setters
-; ==============================
-(* CapsLock & s::SetInputCase("sentence") *)
-CapsLock & .::SetInputCase("sentence")  ; period key
-CapsLock & l::SetInputCase("lower")
-CapsLock & u::SetInputCase("upper")
-(* CapsLock & c::SetInputCase("caps") *)
-CapsLock::SetInputCase("caps")  ; normal behavior w/o AHK
-CapsLock & a::SetInputCase("alt")
-CapsLock & t::SetInputCase("title")
-CapsLock & Alt::SetInputCase("invert") ; AlTernAtINg binding
-CapsLock & p::SetInputCase("pascal")
-CapsLock & c::SetInputCase("camel")
-CapsLock & m::SetInputCase("camel")
-(* CapsLock & n::SetInputCase("snake") *)
-CapsLock & s::SetInputCase("snake")
-CapsLock & _::SetInputCase("snake")  ; underscore key
-CapsLock & k::SetInputCase("kebab")
-CapsLock & -::SetInputCase("kebab")  ; hyphen key
+; ===== INPUT MODE SETTERS (CapsLock + key) =====
+CapsLock & "."::SetInputCase("sentence")
+CapsLock & "l"::SetInputCase("lower")
+CapsLock & "u"::SetInputCase("upper")
+CapsLock::SetInputCase("caps")
+CapsLock & "a"::SetInputCase("alt")
+CapsLock & "t"::SetInputCase("title")
+CapsLock & "p"::SetInputCase("pascal")
+CapsLock & "c"::SetInputCase("camel")
+CapsLock & "m"::SetInputCase("camel")
+CapsLock & "s"::SetInputCase("snake")
+CapsLock & "_"::SetInputCase("snake")
+CapsLock & "k"::SetInputCase("kebab")
+CapsLock & "-"::SetInputCase("kebab")
+CapsLock & "Alt"::SetInputCase("invert")
 
-; ==============================
-; Text Transformation (Ctrl + CapsLock + key)
-; ==============================
-(* ^CapsLock & s::FormatClipboard("sentence") *)
-^CapsLock & .::SetInputCase("sentence")  ; period key
-^CapsLock & l::FormatClipboard("lower")
-^CapsLock & u::FormatClipboard("upper")
-(* ^CapsLock & c::FormatClipboard("caps") *)
+; ===== TEXT TRANSFORMS (Ctrl + CapsLock + key) =====
+^CapsLock & "."::FormatClipboard("sentence")
+^CapsLock & "l"::FormatClipboard("lower")
+^CapsLock & "u"::FormatClipboard("upper")
 ^CapsLock::SetInputCase("caps")
-^CapsLock & a::FormatClipboard("alt")
-^CapsLock & t::FormatClipboard("title")
-^CapsLock & Alt::FormatClipboard("invert")
-^CapsLock & p::FormatClipboard("pascal")
-^CapsLock & c::SetInputCase("camel")
-^CapsLock & m::FormatClipboard("camel")
-(* ^CapsLock & n::FormatClipboard("snake") *)
-^CapsLock & s::SetInputCase("snake")
-^CapsLock & _::SetInputCase("snake")  ; underscore key
-^CapsLock & k::FormatClipboard("kebab")
-^CapsLock & -::SetInputCase("kebab")  ; hyphen key
+^CapsLock & "a"::FormatClipboard("alt")
+^CapsLock & "t"::FormatClipboard("title")
+^CapsLock & "p"::FormatClipboard("pascal")
+^CapsLock & "c"::FormatClipboard("camel")
+^CapsLock & "m"::FormatClipboard("camel")
+^CapsLock & "s"::FormatClipboard("snake")
+^CapsLock & "_"::FormatClipboard("snake")
+^CapsLock & "k"::FormatClipboard("kebab")
+^CapsLock & "-"::FormatClipboard("kebab")
+^CapsLock & "Alt"::FormatClipboard("invert")
 
-; ==============================
-; Functions
-; ==============================
-
+; ===== SET INPUT MODE =====
 SetInputCase(mode) {
     global currentInputMode := mode
-    TrayTip, Case Mode Set, Typing will now be in %mode% case., 1
-    Menu, Tray, Tip, Case Mode: %mode%
+    TrayTip("Case Mode Set", "Typing will now be in " mode " case.", 1000)
+    A_IconTip := "Case Mode: " mode
+    TraySetToolTip(A_IconTip)
 }
 
+; ===== FORMAT CLIPBOARD SELECTION =====
 FormatClipboard(mode) {
-    Clipboard := ""
-    Send ^c
-    ClipWait, 0.3
+    A_Clipboard := ""
+    Send("^c")
+    if !ClipWait(0.3)
+        Send("^a^c"), ClipWait(0.3)
+    
+    text := A_Clipboard
+    if text = ""
+        return
 
-    if (Clipboard = "") {
-        Send ^a
-        Sleep 100
-        Send ^c
-        ClipWait, 0.3
+    switch mode {
+        case "lower": newText := StrLower(text)
+        case "upper": newText := StrUpper(text)
+        case "caps": newText := RegExReplace(text, "\b\w", "$u0")
+        case "sentence": newText := FormatSentence(text)
+        case "alt": newText := FormatAlt(text)
+        case "title": newText := FormatTitle(text)
+        case "invert": newText := FormatInvert(text)
+        case "pascal": newText := FormatPascal(text)
+        case "camel": newText := FormatCamel(text)
+        case "snake": newText := FormatSnake(text)
+        case "kebab": newText := FormatKebab(text)
+        default: return
     }
 
-    text := Clipboard
-    if (text = "")
-        return
-
-    if (mode = "lower")
-        newText := StrLower(text)
-    else if (mode = "upper")
-        newText := StrUpper(text)
-    else if (mode = "caps")
-        newText := RegExReplace(text, "\b\w", "$u0")
-    else if (mode = "sentence")
-        newText := FormatSentence(text)
-    else if (mode = "alt")
-        newText := FormatAlt(text)
-    else if (mode = "title")
-        newText := FormatTitle(text)
-    else if (mode = "invert")
-        newText := FormatInvert(text)
-    else if (mode = "pascal")
-        newText := FormatPascal(text)
-    else if (mode = "camel")
-        newText := FormatCamel(text)
-    else if (mode = "snake")
-        newText := FormatSnake(text)
-    else if (mode = "kebab")
-        newText := FormatKebab(text)
-    else
-        return
-
-    Clipboard := newText
-    Sleep 100
-    Send ^v
+    A_Clipboard := newText
+    Sleep(100)
+    Send("^v")
 }
 
+; ===== CASE TRANSFORMATION FUNCTIONS =====
 FormatSentence(text) {
     text := Trim(text)
-    return RegExReplace(text, "([.?!]\s*|^)([a-z])", "$1" . Chr(Asc("$2") - 32))
+    return RegExReplace(text, "([.?!]\s*|^)([a-z])", "$1" Chr(Asc(SubStr("$2", 1)) - 32))
 }
 
 FormatAlt(text) {
     out := ""
     toggle := true
-    Loop, Parse, text
-    {
+    Loop Parse text {
         char := A_LoopField
-        if (RegExMatch(char, "[a-zA-Z]")) {
+        if RegExMatch(char, "[a-zA-Z]") {
             out .= toggle ? StrUpper(char) : StrLower(char)
             toggle := !toggle
         } else {
@@ -137,12 +110,11 @@ FormatTitle(text) {
 
 FormatInvert(text) {
     out := ""
-    Loop, Parse, text
-    {
+    Loop Parse text {
         char := A_LoopField
-        if (char ~= "[A-Z]")
+        if char ~= "[A-Z]"
             out .= StrLower(char)
-        else if (char ~= "[a-z]")
+        else if char ~= "[a-z]"
             out .= StrUpper(char)
         else
             out .= char
@@ -160,7 +132,7 @@ FormatCamel(text) {
 }
 
 FormatSnake(text) {
-    text := RegExReplace(text, "[^\w\s]", "") ; Remove punctuation
+    text := RegExReplace(text, "[^\w\s]", "")
     return RegExReplace(StrLower(text), "\s+", "_")
 }
 
@@ -168,4 +140,3 @@ FormatKebab(text) {
     text := RegExReplace(text, "[^\w\s]", "")
     return RegExReplace(StrLower(text), "\s+", "-")
 }
-
