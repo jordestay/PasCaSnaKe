@@ -85,10 +85,13 @@ PasCaSnaKe/
 
 ### Stage 1: AutoHotkey MVP
 
-- [x] Base script for CapsLock + modifier → set mode  
-- [x] Ctrl + CapsLock + modifier → transform selected text  
-- [x] Add tray tooltip support  
-- [ ] Real-time typing mode (InputHook)  
+- [x] CapsLock + modifier → transform selected text
+   - [ ] Re-highlight after transform (partial, per app)
+- [ ] (KEY) + CapsLock + modifier → set mode  
+- [ ] Switch input mode placeholder (to prep for InputHook)
+- [ ] Real-time typing mode (InputHook)
+- [ ] Experimental live input casing via InputHook (Pascal/camel/snake/kebab)
+- [ ] Add tray tooltip support
 - [ ] Custom icon + menu options  
 - [ ] Packaged `.exe` version  
 
