@@ -1,0 +1,31 @@
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Compiled scripts and executables
+*.exe
+*.dll
+*.out
+*.obj
+*.pdb
+
+# Logs and temp
+*.log
+*.tmp
+
+# IDE/editor files
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# AutoHotkey specific
+*.ahk.bak
+*.ahk~
+
+# Node (if using Tauri)
+node_modules/
+dist/
+build/
